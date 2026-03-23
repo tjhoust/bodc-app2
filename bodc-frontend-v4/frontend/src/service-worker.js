@@ -60,8 +60,6 @@ registerRoute(
 const bgSyncPlugin = new BackgroundSyncPlugin('bodc-offline-queue', {
   maxRetentionTime: 72 * 60, // retry for up to 72 hours
   onSync: async ({ queue }) => {
-    let entry;
-    const failed = [];
     // eslint-disable-next-line no-constant-condition
   while (true) {
       const entry = await queue.shiftRequest();
