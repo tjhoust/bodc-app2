@@ -1,0 +1,224 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: -webkit-fill-available;
+  overflow: hidden;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+.topbar {
+  height: var(--header-height);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.brand {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandIcon {
+  width: 28px;
+  height: 28px;
+  background: var(--blue);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.topRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.syncBadge {
+  font-size: 11px;
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.userName { font-size: 13px; color: var(--text2); }
+.logoutBtn { }
+.hamburger { display: none; }
+
+/* ── Body layout ─────────────────────────────────────────── */
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sidebar {
+  width: 210px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 12px 8px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+}
+
+.navSection { margin-bottom: 18px; }
+
+.navLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  padding: 0 8px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 1px;
+  transition: all 0.12s;
+  text-decoration: none;
+}
+.navItem:hover { background: var(--surface2); color: var(--text); }
+.navItemActive  { background: var(--blue-bg) !important; color: var(--blue) !important; font-weight: 500; }
+
+.badge {
+  background: var(--red-bg);
+  color: var(--red-text);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.sidebarFooter {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* ── Main content ────────────────────────────────────────── */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.content {
+  padding: 20px 24px;
+  max-width: 1200px;
+}
+
+/* ── Bottom nav ──────────────────────────────────────────── */
+.bottomNav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 50;
+}
+
+.bottomItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text3);
+  text-decoration: none;
+  padding: 6px 0;
+  transition: color 0.12s;
+  min-height: 44px;
+}
+.bottomItemActive { color: var(--blue); }
+
+.bottomIcon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bottomBadge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  background: var(--red);
+  color: white;
+  border-radius: 10px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+}
+.bottomLabel { font-size: 10px; font-weight: 500; }
+
+/* ── Mobile styles ───────────────────────────────────────── */
+@media (max-width: 767px) {
+  .bottomNav { display: flex; }
+  .hamburger { display: flex; }
+  .logoutBtn { display: none; }
+  .userName  { display: none; }
+  .avatar    { display: none; }
+
+  .sidebar {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+  }
+  .sidebarOpen { transform: translateX(0); }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    top: var(--header-height);
+    background: rgba(0,0,0,0.35);
+    z-index: 199;
+  }
+
+  .content { padding: 16px; }
+}
+
+@media (min-width: 768px) {
+  .sidebarFooter { display: block; }
+}
