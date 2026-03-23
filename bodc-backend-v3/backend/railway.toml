@@ -1,0 +1,20 @@
+# Railway deployment configuration
+# This file tells Railway how to deploy the BODC backend
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node src/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "bodc-api"
+
+[services.variables]
+NODE_ENV = "production"
+RUN_MIGRATIONS = "true"
+PORT = "3001"
