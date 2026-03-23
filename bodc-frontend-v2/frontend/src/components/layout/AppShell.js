@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useOffline } from '../../context/OfflineContext';
 import { useQuery } from '@tanstack/react-query';
 import { notifsAPI } from '../../api/client';
+
 import styles from './AppShell.module.css';
 
 // ── Nav config by role ────────────────────────────────────────

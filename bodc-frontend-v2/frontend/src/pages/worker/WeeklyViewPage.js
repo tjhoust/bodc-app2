@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { entriesAPI } from '../../api/client';

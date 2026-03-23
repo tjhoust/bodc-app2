@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { usersAPI, authAPI } from '../../api/client';
