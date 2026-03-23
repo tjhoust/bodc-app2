@@ -62,15 +62,16 @@ const bgSyncPlugin = new BackgroundSyncPlugin('bodc-offline-queue', {
   onSync: async ({ queue }) => {
     let entry;
     const failed = [];
-    while ((entry = await queue.shiftRequest())) {
+    // eslint-disable-next-line no-constant-condition
+  while (true) {
+      const entry = await queue.shiftRequest();
+      if (!entry) break;
       try {
-        await fetch(entry.request);
-        // Notify clients that sync succeeded
+        await fetch(entry.request.clone());
         const clients = await self.clients.matchAll();
         clients.forEach(c => c.postMessage({ type: 'SYNC_SUCCESS', url: entry.request.url }));
       } catch (err) {
         await queue.unshiftRequest(entry);
-        failed.push(entry);
         break;
       }
     }

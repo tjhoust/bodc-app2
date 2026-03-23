@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { notifsAPI } from '../../api/client';

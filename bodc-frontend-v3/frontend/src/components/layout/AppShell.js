@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useOffline } from '../../context/OfflineContext';
 import { useQuery } from '@tanstack/react-query';
@@ -102,7 +102,6 @@ export default function AppShell() {
   const { user, org, logout } = useAuth();
   const { isOnline, pendingCount } = useOffline();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
 
   const { data: notifData } = useQuery({
     queryKey: ['notifications-count'],
