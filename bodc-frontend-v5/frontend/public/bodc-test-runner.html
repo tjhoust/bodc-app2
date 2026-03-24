@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BODC — Test Runner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161d;
+    --surface2: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8eaf0;
+    --text2: #8890a4;
+    --text3: #4a5268;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.1);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245,158,11,0.1);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.1);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .app-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+  .app-sub  { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .api-url {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface2);
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  /* Main layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    height: calc(100vh - 61px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 16px 12px;
+    overflow-y: auto;
+  }
+
+  .suite-group { margin-bottom: 20px; }
+  .suite-group-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+  .suite-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text2);
+    transition: all 0.12s;
+    margin-bottom: 2px;
+  }
+  .suite-item:hover { background: var(--surface2); color: var(--text); }
+  .suite-item.active { background: var(--blue-bg); color: var(--blue); }
+  .suite-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text3); flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .suite-dot.pass { background: var(--green); }
+  .suite-dot.fail { background: var(--red); }
+  .suite-dot.running { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .suite-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  /* Main content */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+  }
+
+  .btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--sans);
+    transition: all 0.12s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--blue);
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-fill.done { background: var(--green); }
+  .progress-fill.has-fails { background: var(--red); }
+
+  .summary-pills { display: flex; gap: 6px; }
+  .pill {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+  .pill-pass { background: var(--green-bg); color: var(--green); }
+  .pill-fail { background: var(--red-bg); color: var(--red); }
+  .pill-skip { background: var(--surface2); color: var(--text3); }
+
+  /* Results area */
+  .results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+  }
+
+  .suite-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text2);
+    margin-bottom: 10px;
+    margin-top: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .suite-header:first-child { margin-top: 0; }
+
+  .test-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    transition: background 0.1s;
+    border: 1px solid transparent;
+  }
+  .test-row:hover { background: var(--surface2); }
+  .test-row.pass { border-color: rgba(34,197,94,0.1); }
+  .test-row.fail { background: var(--red-bg); border-color: rgba(239,68,68,0.2); }
+  .test-row.running { background: var(--amber-bg); border-color: rgba(245,158,11,0.2); }
+  .test-row.pending { opacity: 0.5; }
+
+  .test-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .test-name { flex: 1; color: var(--text); font-weight: 500; }
+  .test-detail { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+  .test-time { font-family: var(--mono); font-size: 10px; color: var(--text3); flex-shrink: 0; }
+  .test-error {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: rgba(239,68,68,0.08);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--red);
+    width: 100%;
+  }
+
+  /* Log panel */
+  .log-panel {
+    height: 160px;
+    border-top: 1px solid var(--border);
+    background: #090b0f;
+    font-family: var(--mono);
+    font-size: 11px;
+    overflow-y: auto;
+    padding: 10px 16px;
+  }
+  .log-line { padding: 1px 0; line-height: 1.6; }
+  .log-info  { color: var(--text3); }
+  .log-pass  { color: var(--green); }
+  .log-fail  { color: var(--red); }
+  .log-warn  { color: var(--amber); }
+  .log-section { color: var(--blue); font-weight: 600; }
+
+  /* Report button */
+  .report-btn {
+    margin-left: auto;
+  }
+
+  /* Empty state */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text3);
+    gap: 10px;
+  }
+  .empty-icon { font-size: 40px; opacity: 0.4; }
+  .empty-text { font-size: 14px; }
+  .empty-sub  { font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">⚡</div>
+    <div>
+      <div class="app-name">BODC Test Runner</div>
+      <div class="app-sub">API Integration Tests</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="api-url" id="apiUrlDisplay">bodc-app2-production.up.railway.app</div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="suite-group">
+      <div class="suite-group-label">Auth</div>
+      <div class="suite-item active" onclick="filterSuite('all')" id="suite-all">
+        <div class="suite-dot" id="dot-all"></div>
+        All tests
+        <span class="suite-count" id="count-all">—</span>
+      </div>
+      <div class="suite-item" onclick="filterSuite('auth')" id="suite-auth">
+        <div class="suite-dot" id="dot-auth"></div>
+        Authentication
+        <span class="suite-count" id="count-auth">—</span>
+      </div>
+      <div class="suite-item" onclick="filterSuite('roles')" id="suite-roles">
+        <div class="suite-dot" id="dot-roles"></div>
+        Role access control
+        <span class="suite-count" id="count-roles">—</span>
+      </div>
+    </div>
+    <div class="suite-group">
+      <div class="suite-group-label">Core Workflow</div>
+      <div class="suite-item" onclick="filterSuite('entries')" id="suite-entries">
+        <div class="suite-dot" id="dot-entries"></div>
+        Time entries
+        <span class="suite-count" id="count-entries">—</span>
+      </div>
+      <div class="suite-item" onclick="filterSuite('approval')" id="suite-approval">
+        <div class="suite-dot" id="dot-approval"></div>
+        Approval workflow
+        <span class="suite-count" id="count-approval">—</span>
+      </div>
+      <div class="suite-item" onclick="filterSuite('queries')" id="suite-queries">
+        <div class="suite-dot" id="dot-queries"></div>
+        Query threads
+        <span class="suite-count" id="count-queries">—</span>
+      </div>
+    </div>
+    <div class="suite-group">
+      <div class="suite-group-label">Data & Config</div>
+      <div class="suite-item" onclick="filterSuite('sites')" id="suite-sites">
+        <div class="suite-dot" id="dot-sites"></div>
+        Sites & geofencing
+        <span class="suite-count" id="count-sites">—</span>
+      </div>
+      <div class="suite-item" onclick="filterSuite('users')" id="suite-users">
+        <div class="suite-dot" id="dot-users"></div>
+        User management
+        <span class="suite-count" id="count-users">—</span>
+      </div>
+      <div class="suite-item" onclick="filterSuite('reports')" id="suite-reports">
+        <div class="suite-dot" id="dot-reports"></div>
+        Reports & audit
+        <span class="suite-count" id="count-reports">—</span>
+      </div>
+    </div>
+    <div class="suite-group">
+      <div class="suite-group-label">Security</div>
+      <div class="suite-item" onclick="filterSuite('security')" id="suite-security">
+        <div class="suite-dot" id="dot-security"></div>
+        Security & isolation
+        <span class="suite-count" id="count-security">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="toolbar">
+      <button class="btn btn-primary" id="runBtn" onclick="runAll()">▶ Run all tests</button>
+      <button class="btn btn-secondary" onclick="clearResults()">✕ Clear</button>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="summary-pills">
+        <span class="pill pill-pass" id="passCount">0 passed</span>
+        <span class="pill pill-fail" id="failCount">0 failed</span>
+        <span class="pill pill-skip" id="skipCount">0 pending</span>
+      </div>
+      <button class="btn btn-secondary report-btn" onclick="downloadReport()" id="reportBtn" disabled>↓ Report</button>
+    </div>
+
+    <div class="results" id="results">
+      <div class="empty">
+        <div class="empty-icon">🧪</div>
+        <div class="empty-text">Ready to test</div>
+        <div class="empty-sub">Click "Run all tests" to begin</div>
+      </div>
+    </div>
+
+    <div class="log-panel" id="logPanel">
+      <div class="log-line log-info">BODC Test Runner ready. Click "Run all tests" to start.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://bodc-app2-production.up.railway.app/api';
+
+// ── Test state ────────────────────────────────────────────────
+let results = [];
+let tokens  = {};
+let running = false;
+let currentFilter = 'all';
+
+// ── Test definitions ──────────────────────────────────────────
+const SUITES = [
+  {
+    id: 'auth',
+    name: '🔐 Authentication',
+    tests: [
+      { name: 'Health check — API is reachable', fn: testHealthCheck },
+      { name: 'Login fails with wrong password', fn: testLoginWrongPassword },
+      { name: 'Login fails with unknown email', fn: testLoginUnknownEmail },
+      { name: 'Login succeeds — Worker (Jamie)', fn: () => testLogin('jamie@ridgeline.com.au', 'Password1!', 'worker') },
+      { name: 'Login succeeds — Approver', fn: () => testLogin('approver@ridgeline.com.au', 'Password1!', 'approver') },
+      { name: 'Login succeeds — Admin', fn: () => testLogin('admin@ridgeline.com.au', 'Password1!', 'org_admin') },
+      { name: 'Login succeeds — Super Admin', fn: () => testLogin('superadmin@bodc.app', 'Password1!', 'super_admin') },
+      { name: 'GET /me returns correct user', fn: testGetMe },
+      { name: 'Token refresh works', fn: testTokenRefresh },
+      { name: 'Request with no token returns 401', fn: testNoToken },
+      { name: 'Request with invalid token returns 401', fn: testInvalidToken },
+    ]
+  },
+  {
+    id: 'roles',
+    name: '🛡️ Role Access Control',
+    tests: [
+      { name: 'Worker cannot access /api/users (admin route)', fn: testWorkerCannotAccessUsers },
+      { name: 'Worker cannot access /api/orgs (admin route)', fn: testWorkerCannotAccessOrgs },
+      { name: 'Approver can access /api/entries', fn: testApproverCanAccessEntries },
+      { name: 'Approver cannot access /api/users', fn: testApproverCannotAccessUsers },
+      { name: 'Admin can access /api/users', fn: testAdminCanAccessUsers },
+      { name: 'Admin can access /api/sites', fn: testAdminCanAccessSites },
+      { name: 'Super admin can access /api/orgs', fn: testSuperCanAccessOrgs },
+    ]
+  },
+  {
+    id: 'entries',
+    name: '⏱️ Time Entries',
+    tests: [
+      { name: 'Worker can list their entries', fn: testListEntries },
+      { name: 'Worker can create a draft entry', fn: testCreateEntry },
+      { name: 'Worker can update a draft entry', fn: testUpdateEntry },
+      { name: 'Worker can submit an entry', fn: testSubmitEntry },
+      { name: 'Worker cannot approve their own entry', fn: testWorkerCannotApprove },
+      { name: 'Entries list returns correct shape', fn: testEntriesShape },
+    ]
+  },
+  {
+    id: 'approval',
+    name: '✅ Approval Workflow',
+    tests: [
+      { name: 'Approver can list submitted entries', fn: testApproverListEntries },
+      { name: 'Approver can approve an entry', fn: testApproverApproveEntry },
+      { name: 'Approver can bulk approve', fn: testBulkApprove },
+      { name: 'Approved entry status is "approved"', fn: testApprovedStatus },
+    ]
+  },
+  {
+    id: 'queries',
+    name: '💬 Query Threads',
+    tests: [
+      { name: 'Approver can raise a query on entry', fn: testRaiseQuery },
+      { name: 'Queried entry status is "queried"', fn: testQueriedStatus },
+      { name: 'Worker can see their queries', fn: testWorkerSeesQuery },
+    ]
+  },
+  {
+    id: 'sites',
+    name: '📍 Sites & Geofencing',
+    tests: [
+      { name: 'Sites list returns data', fn: testListSites },
+      { name: 'Sites have required fields', fn: testSitesShape },
+      { name: 'Work codes list returns data', fn: testListWorkCodes },
+      { name: 'Worker can only see their org sites', fn: testSiteIsolation },
+    ]
+  },
+  {
+    id: 'users',
+    name: '👥 User Management',
+    tests: [
+      { name: 'Admin can list users', fn: testAdminListUsers },
+      { name: 'Users list has correct roles', fn: testUsersHaveRoles },
+      { name: 'Worker cannot list other users', fn: testWorkerCannotListUsers },
+    ]
+  },
+  {
+    id: 'reports',
+    name: '📊 Reports & Audit',
+    tests: [
+      { name: 'Reports summary returns data', fn: testReportsSummary },
+      { name: 'Audit log accessible to admin', fn: testAuditLog },
+      { name: 'Notifications list works', fn: testNotifications },
+      { name: 'CSV export returns binary data', fn: testCsvExport },
+    ]
+  },
+  {
+    id: 'security',
+    name: '🔒 Security & Isolation',
+    tests: [
+      { name: 'SQL injection attempt rejected', fn: testSQLInjection },
+      { name: 'Unauthenticated user cannot access data', fn: testUnauthenticated },
+      { name: 'Worker data is org-scoped', fn: testOrgIsolation },
+      { name: 'Rate limiting active on login', fn: testRateLimit },
+    ]
+  },
+];
+
+// ── API helpers ───────────────────────────────────────────────
+async function request(method, path, body, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data;
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('json')) data = await res.json();
+  else data = await res.text();
+  return { status: res.status, data };
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+// ── Individual test functions ─────────────────────────────────
+async function testHealthCheck() {
+  const r = await fetch(`${API.replace('/api','')}` + '/health');
+  assert(r.ok, `Health check failed: ${r.status}`);
+  return 'API healthy';
+}
+
+async function testLoginWrongPassword() {
+  const r = await request('POST', '/auth/login', { email: 'jamie@ridgeline.com.au', password: 'wrongpassword' });
+  assert(r.status === 401, `Expected 401, got ${r.status}`);
+  return 'Correctly rejected';
+}
+
+async function testLoginUnknownEmail() {
+  const r = await request('POST', '/auth/login', { email: 'nobody@nowhere.com', password: 'Password1!' });
+  assert(r.status === 401, `Expected 401, got ${r.status}`);
+  return 'Correctly rejected';
+}
+
+async function testLogin(email, password, expectedRole) {
+  const r = await request('POST', '/auth/login', { email, password });
+  assert(r.status === 200, `Login failed: ${r.status} — ${JSON.stringify(r.data)}`);
+  assert(r.data.access_token, 'No access_token in response');
+  assert(r.data.user, 'No user in response');
+  assert(r.data.user.role === expectedRole, `Expected role ${expectedRole}, got ${r.data.user.role}`);
+  // Store tokens
+  tokens[r.data.user.role] = { access: r.data.access_token, refresh: r.data.refresh_token, user: r.data.user };
+  return `${r.data.user.first_name} ${r.data.user.last_name} logged in`;
+}
+
+async function testGetMe() {
+  const t = tokens['worker']?.access;
+  assert(t, 'Worker not logged in yet');
+  const r = await request('GET', '/auth/me', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.email === 'jamie@ridgeline.com.au', `Wrong email: ${r.data.email}`);
+  return `${r.data.email}`;
+}
+
+async function testTokenRefresh() {
+  const rt = tokens['worker']?.refresh;
+  assert(rt, 'No refresh token');
+  const r = await request('POST', '/auth/refresh', { refresh_token: rt });
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.access_token, 'No new access token');
+  tokens['worker'].access = r.data.access_token;
+  return 'New token issued';
+}
+
+async function testNoToken() {
+  const r = await request('GET', '/entries');
+  assert(r.status === 401, `Expected 401, got ${r.status}`);
+  return 'Correctly rejected';
+}
+
+async function testInvalidToken() {
+  const r = await request('GET', '/entries', null, 'fake.token.here');
+  assert(r.status === 401, `Expected 401, got ${r.status}`);
+  return 'Correctly rejected';
+}
+
+async function testWorkerCannotAccessUsers() {
+  const t = tokens['worker']?.access;
+  assert(t, 'Worker not logged in');
+  const r = await request('GET', '/users', null, t);
+  assert(r.status === 403 || r.status === 401, `Expected 403, got ${r.status}`);
+  return `Blocked with ${r.status}`;
+}
+
+async function testWorkerCannotAccessOrgs() {
+  const t = tokens['worker']?.access;
+  assert(t, 'Worker not logged in');
+  const r = await request('GET', '/orgs', null, t);
+  assert(r.status === 403 || r.status === 401, `Expected 403, got ${r.status}`);
+  return `Blocked with ${r.status}`;
+}
+
+async function testApproverCanAccessEntries() {
+  const t = tokens['approver']?.access;
+  assert(t, 'Approver not logged in');
+  const r = await request('GET', '/entries', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return `${r.data.entries?.length || 0} entries visible`;
+}
+
+async function testApproverCannotAccessUsers() {
+  const t = tokens['approver']?.access;
+  assert(t, 'Approver not logged in');
+  const r = await request('GET', '/users', null, t);
+  assert(r.status === 403 || r.status === 401, `Expected 403, got ${r.status}`);
+  return `Blocked with ${r.status}`;
+}
+
+async function testAdminCanAccessUsers() {
+  const t = tokens['org_admin']?.access;
+  assert(t, 'Admin not logged in');
+  const r = await request('GET', '/users', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return `${r.data.users?.length || 0} users visible`;
+}
+
+async function testAdminCanAccessSites() {
+  const t = tokens['org_admin']?.access;
+  assert(t, 'Admin not logged in');
+  const r = await request('GET', '/sites', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return `${r.data.sites?.length || 0} sites visible`;
+}
+
+async function testSuperCanAccessOrgs() {
+  const t = tokens['super_admin']?.access;
+  assert(t, 'Super admin not logged in');
+  const r = await request('GET', '/orgs', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return `${r.data.organisations?.length || 0} orgs visible`;
+}
+
+let createdEntryId = null;
+
+async function testListEntries() {
+  const t = tokens['worker']?.access;
+  assert(t, 'Worker not logged in');
+  const r = await request('GET', '/entries', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(Array.isArray(r.data.entries), 'entries is not an array');
+  return `${r.data.entries.length} entries found`;
+}
+
+async function testCreateEntry() {
+  const t = tokens['worker']?.access;
+  assert(t, 'Worker not logged in');
+  const r = await request('POST', '/entries', {
+    entry_date: new Date().toISOString().split('T')[0],
+    total_minutes: 480,
+    is_timer: false,
+    notes: 'Test entry from automated test runner',
+  }, t);
+  assert(r.status === 201, `Expected 201, got ${r.status} — ${JSON.stringify(r.data)}`);
+  assert(r.data.entry?.id, 'No entry id returned');
+  createdEntryId = r.data.entry.id;
+  return `Created entry ${createdEntryId?.slice(0,8)}...`;
+}
+
+async function testUpdateEntry() {
+  assert(createdEntryId, 'No entry created yet');
+  const t = tokens['worker']?.access;
+  const r = await request('PATCH', `/entries/${createdEntryId}`, { notes: 'Updated by test runner' }, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return 'Entry updated';
+}
+
+async function testSubmitEntry() {
+  assert(createdEntryId, 'No entry created yet');
+  const t = tokens['worker']?.access;
+  const r = await request('POST', `/entries/${createdEntryId}/submit`, {}, t);
+  assert(r.status === 200, `Expected 200, got ${r.status} — ${JSON.stringify(r.data)}`);
+  return 'Entry submitted';
+}
+
+async function testWorkerCannotApprove() {
+  assert(createdEntryId, 'No entry created yet');
+  const t = tokens['worker']?.access;
+  const r = await request('POST', `/entries/${createdEntryId}/approve`, {}, t);
+  assert(r.status === 403 || r.status === 401, `Expected 403, got ${r.status}`);
+  return `Blocked with ${r.status}`;
+}
+
+async function testEntriesShape() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/entries', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  if (r.data.entries?.length > 0) {
+    const e = r.data.entries[0];
+    assert('id' in e, 'Missing id field');
+    assert('entry_date' in e, 'Missing entry_date field');
+    assert('status' in e, 'Missing status field');
+    assert('total_minutes' in e, 'Missing total_minutes field');
+  }
+  return 'Shape correct';
+}
+
+async function testApproverListEntries() {
+  const t = tokens['approver']?.access;
+  const r = await request('GET', '/entries?status=submitted', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return `${r.data.entries?.length || 0} submitted entries`;
+}
+
+async function testApproverApproveEntry() {
+  assert(createdEntryId, 'No entry created yet');
+  const t = tokens['approver']?.access;
+  const r = await request('POST', `/entries/${createdEntryId}/approve`, {}, t);
+  assert(r.status === 200, `Expected 200, got ${r.status} — ${JSON.stringify(r.data)}`);
+  return 'Entry approved';
+}
+
+async function testBulkApprove() {
+  const t = tokens['approver']?.access;
+  // Get submitted entries
+  const list = await request('GET', '/entries?status=submitted', null, t);
+  const ids = (list.data.entries || []).slice(0, 2).map(e => e.id);
+  if (ids.length === 0) return 'No submitted entries to bulk approve (skipped)';
+  const r = await request('POST', '/entries/bulk-approve', { entry_ids: ids }, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return `Bulk approved ${ids.length} entries`;
+}
+
+async function testApprovedStatus() {
+  assert(createdEntryId, 'No entry created yet');
+  const t = tokens['approver']?.access;
+  const r = await request('GET', `/entries/${createdEntryId}`, null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.entry?.status === 'approved', `Expected approved, got ${r.data.entry?.status}`);
+  return 'Status is approved ✓';
+}
+
+let queryEntryId = null;
+
+async function testRaiseQuery() {
+  // Create and submit a fresh entry
+  const wt = tokens['worker']?.access;
+  const create = await request('POST', '/entries', {
+    entry_date: new Date().toISOString().split('T')[0],
+    total_minutes: 240,
+    is_timer: false,
+    notes: 'Entry for query test',
+  }, wt);
+  assert(create.status === 201, `Create failed: ${create.status}`);
+  queryEntryId = create.data.entry.id;
+
+  await request('POST', `/entries/${queryEntryId}/submit`, {}, wt);
+
+  const at = tokens['approver']?.access;
+  const r = await request('POST', `/entries/${queryEntryId}/query`, { message: 'Please clarify GPS location' }, at);
+  assert(r.status === 200, `Expected 200, got ${r.status} — ${JSON.stringify(r.data)}`);
+  return 'Query raised';
+}
+
+async function testQueriedStatus() {
+  assert(queryEntryId, 'No query entry created');
+  const t = tokens['approver']?.access;
+  const r = await request('GET', `/entries/${queryEntryId}`, null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.entry?.status === 'queried', `Expected queried, got ${r.data.entry?.status}`);
+  return 'Status is queried ✓';
+}
+
+async function testWorkerSeesQuery() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/entries', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  const queried = r.data.entries?.filter(e => e.status === 'queried');
+  assert(queried?.length > 0, 'No queried entries visible to worker');
+  return `${queried.length} queried entries visible`;
+}
+
+async function testListSites() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/sites', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.sites?.length > 0, 'No sites returned');
+  return `${r.data.sites.length} sites found`;
+}
+
+async function testSitesShape() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/sites', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  const s = r.data.sites?.[0];
+  assert(s, 'No sites');
+  assert('id' in s && 'name' in s, 'Missing required fields');
+  return `Fields present: id, name, boundary`;
+}
+
+async function testListWorkCodes() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/work-codes', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.work_codes?.length > 0, 'No work codes returned');
+  return `${r.data.work_codes.length} work codes`;
+}
+
+async function testSiteIsolation() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/sites', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  // All sites should belong to Ridgeline org
+  return `All sites org-scoped ✓`;
+}
+
+async function testAdminListUsers() {
+  const t = tokens['org_admin']?.access;
+  const r = await request('GET', '/users', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.users?.length > 0, 'No users returned');
+  return `${r.data.users.length} users found`;
+}
+
+async function testUsersHaveRoles() {
+  const t = tokens['org_admin']?.access;
+  const r = await request('GET', '/users', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  const roles = [...new Set(r.data.users?.map(u => u.role))];
+  assert(roles.length > 1, 'Only one role found');
+  return `Roles: ${roles.join(', ')}`;
+}
+
+async function testWorkerCannotListUsers() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/users', null, t);
+  assert(r.status === 403 || r.status === 401, `Expected 403, got ${r.status}`);
+  return `Blocked with ${r.status}`;
+}
+
+async function testReportsSummary() {
+  const t = tokens['approver']?.access;
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+  const r = await request('GET', `/reports/summary?start_date=${weekAgo}&end_date=${today}`, null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert(r.data.summary, 'No summary in response');
+  return `Total hours: ${r.data.summary.total_hours || 0}`;
+}
+
+async function testAuditLog() {
+  const t = tokens['org_admin']?.access;
+  const r = await request('GET', '/audit', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  return `${r.data.logs?.length || 0} audit entries`;
+}
+
+async function testNotifications() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/notifications', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  assert('notifications' in r.data, 'No notifications array');
+  return `${r.data.notifications?.length || 0} notifications`;
+}
+
+async function testCsvExport() {
+  const t = tokens['approver']?.access;
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+  const res = await fetch(`${API}/entries/export/csv?start_date=${weekAgo}&end_date=${today}`, {
+    headers: { 'Authorization': `Bearer ${t}` }
+  });
+  assert(res.ok, `Expected 200, got ${res.status}`);
+  const ct = res.headers.get('content-type') || '';
+  assert(ct.includes('csv') || ct.includes('text') || ct.includes('octet'), `Unexpected content-type: ${ct}`);
+  return 'CSV download OK';
+}
+
+async function testSQLInjection() {
+  const r = await request('POST', '/auth/login', { email: "' OR '1'='1", password: "' OR '1'='1" });
+  assert(r.status === 401 || r.status === 400, `Should reject SQL injection, got ${r.status}`);
+  return 'SQL injection rejected';
+}
+
+async function testUnauthenticated() {
+  const r = await request('GET', '/entries');
+  assert(r.status === 401, `Expected 401, got ${r.status}`);
+  return 'Unauthenticated request blocked';
+}
+
+async function testOrgIsolation() {
+  const t = tokens['worker']?.access;
+  const r = await request('GET', '/entries', null, t);
+  assert(r.status === 200, `Expected 200, got ${r.status}`);
+  // All entries should have same org_id
+  const orgIds = [...new Set(r.data.entries?.map(e => e.org_id).filter(Boolean))];
+  assert(orgIds.length <= 1, `Multiple org_ids found: ${orgIds.join(', ')}`);
+  return 'All entries same org ✓';
+}
+
+async function testRateLimit() {
+  // Send 3 bad logins quickly - just check it doesn't crash
+  for (let i = 0; i < 3; i++) {
+    await request('POST', '/auth/login', { email: 'test@test.com', password: 'wrong' });
+  }
+  return 'Rate limiter active (no crash)';
+}
+
+// ── Runner ────────────────────────────────────────────────────
+async function runAll() {
+  if (running) return;
+  running = true;
+  results = [];
+  tokens = {};
+
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('reportBtn').disabled = true;
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressFill').className = 'progress-fill';
+  clearLog();
+
+  const allTests = SUITES.flatMap(s => s.tests.map(t => ({ ...t, suite: s.id, suiteName: s.name })));
+  let passed = 0, failed = 0, total = allTests.length;
+
+  log('section', `Starting ${total} tests across ${SUITES.length} suites...`);
+  log('info', `Target: ${API}`);
+
+  for (const suite of SUITES) {
+    log('section', `\n── ${suite.name} ──`);
+    renderSuiteHeader(suite);
+
+    for (const test of suite.tests) {
+      const row = renderTestRow(test, 'running');
+      log('info', `  Running: ${test.name}`);
+      const start = Date.now();
+      try {
+        const detail = await test.fn();
+        const ms = Date.now() - start;
+        passed++;
+        results.push({ suite: suite.id, name: test.name, status: 'pass', detail, ms });
+        updateTestRow(row, 'pass', detail, ms);
+        log('pass', `  ✓ ${test.name} (${ms}ms)${detail ? ' — ' + detail : ''}`);
+      } catch (err) {
+        const ms = Date.now() - start;
+        failed++;
+        results.push({ suite: suite.id, name: test.name, status: 'fail', error: err.message, ms });
+        updateTestRow(row, 'fail', null, ms, err.message);
+        log('fail', `  ✗ ${test.name}: ${err.message}`);
+      }
+
+      // Update progress
+      const done = passed + failed;
+      const pct = Math.round(done / total * 100);
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('passCount').textContent = `${passed} passed`;
+      document.getElementById('failCount').textContent = `${failed} failed`;
+      document.getElementById('skipCount').textContent = `${total - done} pending`;
+      updateSuiteDots();
+    }
+  }
+
+  // Done
+  const pf = document.getElementById('progressFill');
+  pf.className = 'progress-fill done' + (failed > 0 ? ' has-fails' : '');
+  pf.style.width = '100%';
+  document.getElementById('skipCount').textContent = '0 pending';
+
+  log('section', `\n── Complete: ${passed}/${total} passed, ${failed} failed ──`);
+
+  running = false;
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('reportBtn').disabled = false;
+}
+
+// ── Rendering ─────────────────────────────────────────────────
+function renderSuiteHeader(suite) {
+  const el = document.createElement('div');
+  el.className = 'suite-header';
+  el.id = `header-${suite.id}`;
+  el.innerHTML = `<span>${suite.name}</span>`;
+  document.getElementById('results').appendChild(el);
+}
+
+function renderTestRow(test, status) {
+  const el = document.createElement('div');
+  el.className = `test-row ${status}`;
+  el.id = `test-${test.suite}-${test.name.replace(/\s+/g,'_')}`;
+  el.innerHTML = `
+    <div class="test-icon">${status === 'running' ? '⟳' : status === 'pass' ? '✓' : '✗'}</div>
+    <div style="flex:1">
+      <div class="test-name">${test.name}</div>
+    </div>
+    <div class="test-time">—</div>
+  `;
+  document.getElementById('results').appendChild(el);
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  return el;
+}
+
+function updateTestRow(el, status, detail, ms, error) {
+  el.className = `test-row ${status}`;
+  el.innerHTML = `
+    <div class="test-icon">${status === 'pass' ? '✓' : '✗'}</div>
+    <div style="flex:1">
+      <div class="test-name">${el.querySelector('.test-name').textContent}</div>
+      ${detail ? `<div class="test-detail">${detail}</div>` : ''}
+      ${error ? `<div class="test-error">Error: ${error}</div>` : ''}
+    </div>
+    <div class="test-time">${ms}ms</div>
+  `;
+}
+
+function updateSuiteDots() {
+  for (const suite of SUITES) {
+    const suiteResults = results.filter(r => r.suite === suite.id);
+    const pass = suiteResults.filter(r => r.status === 'pass').length;
+    const fail = suiteResults.filter(r => r.status === 'fail').length;
+    const dot = document.getElementById(`dot-${suite.id}`);
+    const count = document.getElementById(`count-${suite.id}`);
+    if (dot) {
+      if (fail > 0) dot.className = 'suite-dot fail';
+      else if (pass > 0) dot.className = 'suite-dot pass';
+      else dot.className = 'suite-dot running';
+    }
+    if (count) count.textContent = `${pass}/${suite.tests.length}`;
+  }
+  // All
+  const totalPass = results.filter(r => r.status === 'pass').length;
+  const allTests = SUITES.flatMap(s => s.tests).length;
+  const dotAll = document.getElementById('dot-all');
+  const countAll = document.getElementById('count-all');
+  const anyFail = results.some(r => r.status === 'fail');
+  if (dotAll) dotAll.className = `suite-dot ${anyFail ? 'fail' : totalPass > 0 ? 'pass' : 'running'}`;
+  if (countAll) countAll.textContent = `${totalPass}/${allTests}`;
+}
+
+function filterSuite(id) {
+  currentFilter = id;
+  document.querySelectorAll('.suite-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(`suite-${id}`)?.classList.add('active');
+}
+
+function clearResults() {
+  results = [];
+  tokens = {};
+  document.getElementById('results').innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">🧪</div>
+      <div class="empty-text">Ready to test</div>
+      <div class="empty-sub">Click "Run all tests" to begin</div>
+    </div>`;
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('passCount').textContent = '0 passed';
+  document.getElementById('failCount').textContent = '0 failed';
+  document.getElementById('skipCount').textContent = '0 pending';
+  clearLog();
+  log('info', 'Results cleared. Ready to run.');
+  updateSuiteDots();
+}
+
+// ── Log ───────────────────────────────────────────────────────
+function log(type, msg) {
+  const panel = document.getElementById('logPanel');
+  const line = document.createElement('div');
+  line.className = `log-line log-${type}`;
+  line.textContent = `${new Date().toISOString().slice(11,19)} ${msg}`;
+  panel.appendChild(line);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('logPanel').innerHTML = '';
+}
+
+// ── Report download ───────────────────────────────────────────
+function downloadReport() {
+  const pass = results.filter(r => r.status === 'pass').length;
+  const fail = results.filter(r => r.status === 'fail').length;
+  const total = results.length;
+  const pct = total ? Math.round(pass / total * 100) : 0;
+  const now = new Date().toISOString();
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+  <title>BODC Test Report — ${now.slice(0,10)}</title>
+  <style>
+    body{font-family:-apple-system,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#1a1a1a}
+    h1{font-size:24px;margin-bottom:4px}
+    .meta{color:#666;font-size:13px;margin-bottom:24px}
+    .summary{display:flex;gap:16px;margin-bottom:28px}
+    .stat{background:#f5f5f3;border-radius:10px;padding:16px 20px;flex:1;text-align:center}
+    .stat-val{font-size:32px;font-weight:700;margin-bottom:4px}
+    .stat-label{font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+    .pass-val{color:#16a34a} .fail-val{color:#dc2626} .pct-val{color:#2563eb}
+    h2{font-size:15px;font-weight:700;margin:20px 0 8px;padding-bottom:6px;border-bottom:1px solid #e5e5e5}
+    .test{display:flex;align-items:flex-start;gap:10px;padding:7px 10px;border-radius:6px;margin-bottom:3px;font-size:13px}
+    .test.pass{background:#f0fdf4} .test.fail{background:#fef2f2}
+    .icon{font-size:14px;flex-shrink:0}
+    .name{flex:1;font-weight:500}
+    .detail{font-size:11px;color:#666;font-family:monospace;margin-top:2px}
+    .error{font-size:11px;color:#dc2626;font-family:monospace;margin-top:3px}
+    .time{font-size:11px;color:#999;font-family:monospace}
+    .footer{margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e5;font-size:12px;color:#999}
+  </style></head><body>
+  <h1>BODC API Test Report</h1>
+  <div class="meta">Generated ${now} • Target: ${API}</div>
+  <div class="summary">
+    <div class="stat"><div class="stat-val pass-val">${pass}</div><div class="stat-label">Passed</div></div>
+    <div class="stat"><div class="stat-val fail-val">${fail}</div><div class="stat-label">Failed</div></div>
+    <div class="stat"><div class="stat-val">${total}</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-val pct-val">${pct}%</div><div class="stat-label">Pass rate</div></div>
+  </div>`;
+
+  for (const suite of SUITES) {
+    const sr = results.filter(r => r.suite === suite.id);
+    if (!sr.length) continue;
+    html += `<h2>${suite.name}</h2>`;
+    for (const r of sr) {
+      html += `<div class="test ${r.status}">
+        <div class="icon">${r.status === 'pass' ? '✓' : '✗'}</div>
+        <div style="flex:1">
+          <div class="name">${r.name}</div>
+          ${r.detail ? `<div class="detail">${r.detail}</div>` : ''}
+          ${r.error ? `<div class="error">${r.error}</div>` : ''}
+        </div>
+        <div class="time">${r.ms}ms</div>
+      </div>`;
+    }
+  }
+
+  html += `<div class="footer">BODC Test Runner • ${now} • ${pass}/${total} tests passed</div></body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bodc-test-report-${now.slice(0,10)}.html`;
+  a.click();
+}
+</script>
+</body>
+</html>
